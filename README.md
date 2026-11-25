@@ -17,6 +17,12 @@ Native Android companion computer for ArduPilot Rover, Copter and Plane. Phase 1
 
 This is an initial implementation. Android device behavior has **not** been verified. See [known limitations](docs/KNOWN_LIMITATIONS.md) and [manual verification](tests/MANUAL.md). Additional phases are not implemented.
 
+## GitHub Actions
+
+[Android build](https://github.com/Akceptor/DroidPilot/actions/workflows/android.yml) runs on each push, pull request and manual request. It uses Ubuntu 24.04, Temurin Java 25 and Android SDK 36. The workflow runs the JVM tests, builds the debug APK and runs Android lint. Gradle dependencies are cached.
+
+Open a successful run and download `droidpilot-debug-<run number>` from Artifacts. Extract the ZIP, then install `app-debug.apk` with `adb install -r app-debug.apk`. Test and lint reports are uploaded even when verification fails. Artifacts are retained for 14 days. These are debug builds signed with the runner's temporary debug key; uninstall an APK signed by a different key before installing, which removes its local data. Device and hardware tests remain manual.
+
 ## Build and install
 
 Requirements: JDK 25 for the verified Gradle runtime (JDK 17+ is supported by AGP), Android SDK 36, Build Tools 36.0.0, platform-tools and internet access for dependency download. Android Studio is optional. Install SDK packages with `sdkmanager`; accept their licenses. Set `ANDROID_HOME` or set `sdk.dir` in an ignored `local.properties` file.
