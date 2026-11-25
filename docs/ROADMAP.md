@@ -20,9 +20,9 @@ UVC library evaluation and simultaneous USB serial/camera tests. Add MJPEG, nati
 
 Android GNSS acquisition and tested GPS_INPUT generation. Correct timestamps, altitude reference, NED velocity, ignore flags and expiry are required. Add phone battery MAVLink telemetry and permission-aware cellular signal diagnostics. Basic local battery/thermal status is already available in Phase 1; add thermal load management here.
 
-## Phase 4 — not implemented
+## Phase 4 — configuration baseline implemented
 
-Evaluate Ktor's Android-compatible engine and dependencies. Implement port 4001 HTTP service, static browser UI, authenticated REST and WebSocket telemetry/signaling. Require exclusive command ownership, command expiry and release on disconnect before keyboard/gamepad control.
+Ktor CIO HTTP on configurable port 4001, form login with bounded cookie sessions, responsive admin UI, saved configuration with revision checks, diagnostics and runtime pause/apply are implemented. Camera activation remains native. WebSockets, browser video/signaling and remote vehicle control are not implemented. Require exclusive command ownership, command expiry and release on disconnect before keyboard/gamepad control.
 
 ## Phase 5 — not verified
 

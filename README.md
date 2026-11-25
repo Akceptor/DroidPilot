@@ -1,6 +1,6 @@
 # DroidPilot
 
-Native Android companion computer for ArduPilot Rover, Copter and Plane. Phase 1 provides USB/UDP MAVLink routing and Camera2 hardware H.264 streaming. No root, Raspberry Pi, account or cloud service is required. ZeroTier runs as a separate app.
+Native Android companion computer for ArduPilot Rover, Copter and Plane. Phase 1 provides USB/UDP MAVLink routing and Camera2 hardware H.264 streaming. Version 0.2 adds authenticated browser configuration and diagnostics. No root, Raspberry Pi, account or cloud service is required. ZeroTier runs as a separate app.
 
 ## Implemented
 
@@ -15,7 +15,11 @@ Native Android companion computer for ArduPilot Rover, Copter and Plane. Phase 1
 - Camera2 enumeration, stopped-service preview, hardware H.264 surface encoding, RTP/H.264 UDP output and an explicit synthetic video source.
 - Focus, exposure, supported stabilization and zoom controls. Unsupported combinations report an error.
 
-This is an initial implementation. Android device behavior has **not** been verified. See [known limitations](docs/KNOWN_LIMITATIONS.md) and [manual verification](tests/MANUAL.md). Additional phases are not implemented.
+This is an initial implementation. Installation and basic web-service behavior are tested on a Samsung phone; USB/video endurance and flight-controller acceptance remain unverified. See [known limitations](docs/KNOWN_LIMITATIONS.md) and [manual verification](tests/MANUAL.md). Additional phases are not implemented.
+
+## Web configuration
+
+Set a web login in Android Network settings and start the foreground service. Open `http://PHONE_IP:4001` through your private network or VPN. The browser supports saved configuration, runtime diagnostics, telemetry Apply and companion Pause. It remains available while the companion runtime is paused. See [web setup and API](docs/WEB.md). Real camera activation still requires the Android Activity.
 
 ## GitHub Actions
 
@@ -28,7 +32,7 @@ Open a successful run and download `droidpilot-debug-<run number>` from Artifact
 Requirements: JDK 25 for the verified Gradle runtime (JDK 17+ is supported by AGP), Android SDK 36, Build Tools 36.0.0, platform-tools and internet access for dependency download. Android Studio is optional. Install SDK packages with `sdkmanager`; accept their licenses. Set `ANDROID_HOME` or set `sdk.dir` in an ignored `local.properties` file.
 
 ```sh
-./gradlew :core:test :app:assembleDebug :app:lintDebug
+./gradlew :core:test :webserver:test :app:assembleDebug :app:lintDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 

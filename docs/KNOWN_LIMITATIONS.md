@@ -2,10 +2,10 @@
 
 ## Verified in this environment
 
-- No Android phone or emulator was connected. USB, capture, encoder, screen-off, VPN and Mission Planner tests were not performed.
+- A Samsung Android API 31 phone is connected. Installation and basic web-service checks are recorded in VERIFICATION.md. Physical UART, sustained camera/video, Mission Planner and endurance tests remain open.
 - The core unit/integration tests run on JVM loopback. They do not prove Android transport or hardware behavior.
-- UVC, MJPEG, WebRTC, recording, GNSS forwarding, HTTP service, browser control, TCP and MAVLink WebSocket transports are absent.
-- Configuration changes need Stop and Start. Dynamic encoder bitrate adjustment is not exposed.
+- UVC, MJPEG, WebRTC, recording, GNSS forwarding, browser vehicle control, TCP and MAVLink WebSocket transports are absent.
+- Web configuration supports Save and Apply for telemetry/synthetic video. Real-camera activation needs the Android Activity. Web bind changes require a full foreground-service restart. Dynamic encoder bitrate adjustment is not exposed.
 - Preview needs the service stopped. Camera output uses sensor orientation; rotation and flip transforms are absent.
 - H.264 is the only encoder output. Hardware availability and requested camera/encoder combinations are checked at runtime. Failure is reported; there is no silent software encoder fallback. On API 28 the hardware test uses codec-name heuristics because the hardware flag is unavailable.
 - There is no RTCP feedback, RTP retransmission, packet-delivery acknowledgment or automatic bitrate adaptation. UDP send counters do not prove reception. Lost video packets recover at a future keyframe.
@@ -25,3 +25,5 @@
 USB host plus PD charging, adapter baud support, multiple ports, hub stability and simultaneous UVC/serial access depend on hardware. Camera permission behavior after lock, sustained Camera2 capture, encoder surface handling, sync-frame requests, SPS/PPS output, network recovery and battery/thermal endurance need the device checklist. API 28 and current Android foreground-service behavior need separate physical-device coverage.
 
 Dependency update notices from lint are expected for pinned stable versions. Upgrade only with a build, lint and device regression check. See DEPENDENCIES.md.
+
+The embedded HTTP server uses form login and cookie sessions over HTTP. It needs a trusted network or VPN for transport protection. Browser video, keyboard/gamepad control, WebSocket telemetry and TLS are not implemented.

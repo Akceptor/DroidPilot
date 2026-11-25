@@ -2,7 +2,7 @@
 
 ## Modules
 
-`core` contains configuration, MAVLink framing, CRC extras, routing, bounded queues, UDP transport and RTP packetization. It has no Android dependency. `app` contains the Android adapters, service and UI. Packages are used instead of empty feature modules.
+`core` contains configuration, MAVLink framing, CRC extras, routing, bounded queues, UDP transport and RTP packetization. It has no Android dependency. `app` contains the Android adapters, service and UI. `webserver` contains the Android-independent Ktor CIO server, authentication, API and static assets. Packages are used instead of empty feature modules.
 
 ## Data flow
 
@@ -31,3 +31,10 @@ The foreground service owns a SupervisorJob. Each transport and video pipeline r
 Compose observes StateFlow. DataStore persists configuration. Changes apply on the next explicit Start. A snapshot is passed to the service; the service survives Activity destruction. connectedDevice is active for the external MAVLink link. camera is added on API 30+ only for an enabled real camera. No location subsystem or permission is active. The optional partial wake lock is held only while the runtime exists. Android releases process-owned locks on process death.
 
 The service uses START_NOT_STICKY. There is no boot receiver or claim of automatic camera restart after process death/reboot. Start from a visible Activity. OEM power policy can still stop operation.
+
+
+## Web service ownership
+
+The foreground service owns HTTP separately from `CompanionRuntime`. Pause cancels and joins the runtime, closes hardware and releases its wake lock, while HTTP remains available. Android Stop ends both. Native Start can recreate a paused runtime from a visible Activity. HTTP Apply rejects real-camera starts/restarts, including replacing an existing real-camera pipeline.
+
+DataStore transactions compare configuration revisions atomically before saving. Both native and browser editors use the same map schema. Credentials are excluded from that map and stored as a salted PBKDF2 hash in a separate private AtomicFile. Ktor administration and APIs require cookie sessions; only exact login routes and shared styling are public. Mutation endpoints require a same-origin custom header, bounded bodies and valid numeric/localhost Host names. No vehicle commands are accepted.

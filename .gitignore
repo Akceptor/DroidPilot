@@ -7,3 +7,4 @@ local.properties
 .idea/
 *.sdp
 !gradle/wrapper/gradle-wrapper.jar
+!webserver/src/main/resources/web/*.html

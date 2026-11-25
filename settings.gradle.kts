@@ -5,3 +5,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "DroidPilot"
 include(":app", ":core")
+include(":webserver")

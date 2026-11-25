@@ -68,14 +68,8 @@ class MainActivity:ComponentActivity() {
     override fun onDestroy() { unregisterReceiver(usbPermission);super.onDestroy() }
 }
 
-private fun configFields(config:PilotConfig):Map<String,String> {
-    val properties=Properties().apply { load(StringReader(config.encode())) }
-    return properties.stringPropertyNames().associateWith(properties::getProperty)
-}
-private fun fromFields(fields:Map<String,String>):PilotConfig {
-    val properties=Properties().apply { fields.forEach { (k,v)->setProperty(k,v) } }
-    return PilotConfig.decode(StringWriter().also { properties.store(it,null) }.toString())
-}
+private fun configFields(config:PilotConfig)=config.fields()
+private fun fromFields(fields:Map<String,String>)=PilotConfig.fromFields(fields)
 
 @Composable private fun PilotApp(start:(PilotConfig)->Unit,usbPermission:(android.hardware.usb.UsbDevice)->Unit) {
     val context=LocalContext.current
@@ -84,12 +78,17 @@ private fun fromFields(fields:Map<String,String>):PilotConfig {
     val state by AppState.state.collectAsStateWithLifecycle()
     var fields by remember { mutableStateOf(configFields(PilotConfig())) }
     var loaded by remember { mutableStateOf(false) }
+    var dirty by remember { mutableStateOf(false) }
+    var revision by remember { mutableStateOf(PilotConfig().revision()) }
     var message by remember { mutableStateOf("") }
     var screen by remember { mutableStateOf("Dashboard") }
     var phone by remember { mutableStateOf("") }
     var network by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
-        try { fields=configFields(store.config.first());loaded=true } catch(e:Exception) { message="Configuration read failed: ${e.message}" }
+        try { store.config.collect { saved->
+            if(!dirty) { fields=configFields(saved);revision=saved.revision() }
+            loaded=true
+        } } catch(e:Exception) { message="Configuration read failed: ${e.message}" }
     }
     LaunchedEffect(state.running) {
         while(isActive) {
@@ -98,10 +97,14 @@ private fun fromFields(fields:Map<String,String>):PilotConfig {
             delay(3000)
         }
     }
-    fun set(key:String,value:String) { fields=fields+(key to value) }
+    fun set(key:String,value:String) { fields=fields+(key to value);dirty=true }
     fun save(andStart:Boolean=false) {
         scope.launch {
-            try { val config=fromFields(fields);store.save(config);message="Configuration saved";if(andStart) start(config) }
+            try {
+                val config=fromFields(fields)
+                if(store.save(config,revision)) { revision=config.revision();dirty=false;message="Configuration saved";if(andStart) start(config) }
+                else message="Settings changed remotely. Reload configuration before saving."
+            }
             catch(e:Exception) { message="Invalid configuration: ${e.message ?: e.javaClass.simpleName}" }
         }
     }
@@ -134,7 +137,7 @@ private fun fromFields(fields:Map<String,String>):PilotConfig {
                     Text(phone);Text(network)
                     Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                         Button(onClick={save(true)},enabled=loaded && !state.running) { Text("Start") }
-                        OutlinedButton(onClick={ context.stopService(Intent(context,CompanionService::class.java)) },enabled=state.running) { Text("Stop") }
+                        OutlinedButton(onClick={ context.stopService(Intent(context,CompanionService::class.java)) },enabled=state.serviceAlive) { Text("Stop service") }
                     }
                     toggle("wakeLock","Keep CPU awake while running")
                 }
@@ -195,7 +198,13 @@ private fun fromFields(fields:Map<String,String>):PilotConfig {
                 "Network" -> {
                     Text(network)
                     Text("Sockets use normal Android routing, including an active VPN. No interface binding or discovery is used. Start ZeroTier separately and configure explicit peer IP addresses.")
-                    Text("Embedded HTTP server (default port 4001) is planned for Phase 4. No HTTP control endpoints are exposed.")
+                    Text("Web server: ${state.web}")
+                    Text("Use http://PHONE_IP:${fields["webPort"] ?: "4001"} in your browser. Sign in with your web username and password. Use a trusted local network or VPN.")
+                    toggle("webEnabled","Enable web configuration server")
+                    field("webBindAddress","HTTP listening address")
+                    field("webPort","HTTP port")
+                    Text("Listener changes apply after Stop service and Start on the phone.")
+                    WebLoginSettings { message=it }
                     OutlinedButton(onClick={context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))}) { Text("Battery optimization settings") }
                 }
                 "Diagnostics" -> {
@@ -205,13 +214,16 @@ private fun fromFields(fields:Map<String,String>):PilotConfig {
                     LaunchedEffect(Unit) { capabilities=withContext(Dispatchers.IO) { runCatching { cameraReport(context)+"\n\nEncoders\n"+encoderReport() }.getOrElse { "Capabilities unavailable: ${it.message}" } } }
                     Text(capabilities)
                     OutlinedButton(onClick={
-                        val report="DroidPilot 0.1.0\nAndroid API ${Build.VERSION.SDK_INT}\n$phone\n$network\n$capabilities\nTraffic: ${state.traffic}\n"+state.logs.joinToString("\n")
+                        val report="DroidPilot 0.2.0\nAndroid API ${Build.VERSION.SDK_INT}\n$phone\n$network\n$capabilities\nTraffic: ${state.traffic}\n"+state.logs.joinToString("\n")
                         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,report),"Export diagnostics"))
                     }) { Text("Export diagnostic report") }
                     Text(state.logs.joinToString("\n").ifEmpty { "No events" })
                 }
             }
-            if(screen in listOf("MAVLink","Video","Dashboard")) Button(onClick={save()},enabled=loaded && !state.running) { Text("Save configuration") }
+            if(screen in listOf("MAVLink","Video","Dashboard","Network")) Button(onClick={save()},enabled=loaded && !state.running) { Text("Save configuration") }
+            OutlinedButton(onClick={scope.launch {
+                val saved=store.config.first();fields=configFields(saved);revision=saved.revision();dirty=false;message="Saved configuration reloaded"
+            }},enabled=!state.running && loaded) { Text("Reload configuration") }
             Spacer(Modifier.height(12.dp))
         }
     }
@@ -256,4 +268,24 @@ private fun fromFields(fields:Map<String,String>):PilotConfig {
             }
         })
     }
+}
+
+
+@Composable private fun WebLoginSettings(message:(String)->Unit) {
+    val context=LocalContext.current
+    val scope=rememberCoroutineScope()
+    val access=remember { WebAccessStore(context.applicationContext) }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { username=access.read()?.username.orEmpty() }
+    Text("Web login (stored separately from companion configuration)")
+    OutlinedTextField(value=username,onValueChange={username=it},label={Text("Web username")},singleLine=true,modifier=Modifier.fillMaxWidth())
+    OutlinedTextField(value=password,onValueChange={password=it},label={Text("Set web password")},singleLine=true,visualTransformation=androidx.compose.ui.text.input.PasswordVisualTransformation(),modifier=Modifier.fillMaxWidth())
+    OutlinedButton(onClick={scope.launch {
+        busy=true
+        try { access.save(username,password);password="";message("Web login saved") }
+        catch(e:Exception) { message("Web login: ${e.message}") }
+        finally { busy=false }
+    }},enabled=!busy && username.isNotBlank() && password.isNotEmpty()) { Text("Save web login") }
 }

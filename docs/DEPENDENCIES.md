@@ -17,7 +17,9 @@ Checked during the initial implementation on 2026-11-25. All selected artifacts 
 
 AndroidX, Kotlin and Gradle have maintained official release channels. Lint identifies newer versions than these conservative pins. USB serial upstream is active and documents CP21xx, CH34x, FTDI and CDC ACM support. USB adapter operation remains unverified.
 
-No UVC, native WebRTC or Ktor dependency is selected yet. Their Android support and maintenance must be verified in the phase that implements them. Empty wrappers around unavailable APIs are not included.
+Ktor CIO server/auth 3.3.2 and kotlinx.serialization JSON 1.9.0 are now selected for the web configuration module. Official Maven artifacts resolve and Android API 31 startup is tested. Ktor CIO avoids the Android Netty engine issue noted in the 3.3.2 release notes. The version compiles with the existing Kotlin 2.2 toolchain. Ktor uses Apache-2.0 terms.
+
+No UVC or native WebRTC dependency is selected yet. Their Android support and maintenance must be verified in the phase that implements them. Empty wrappers around unavailable APIs are not included.
 
 CRC extras were generated from [mavlink/c_library_v2 ardupilotmega.h](https://github.com/mavlink/c_library_v2/blob/5b3150cfdae0caad3841b015fc24a1a81a2a1f84/ardupilotmega/ardupilotmega.h). The table contains message IDs and protocol CRC constants. MAVLink libraries are provided under MIT terms; see THIRD_PARTY_NOTICES.md. The app does not use a full MAVLink decoding dependency.
 

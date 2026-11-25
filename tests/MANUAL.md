@@ -1,6 +1,6 @@
 # Device acceptance checklist
 
-No rows below are marked passed. Record phone model, Android version, app commit, hub, adapter, controller firmware, network path, duration and result in a local report. Keep device identifiers and private addresses out of public commits.
+The hardware acceptance rows below remain unperformed; web checks are recorded separately below. Record phone model, Android version, app commit, hub, adapter, controller firmware, network path, duration and result in a local report. Keep device identifiers and private addresses out of public commits.
 
 | Test | Procedure | Pass condition |
 | --- | --- | --- |
@@ -28,3 +28,17 @@ No rows below are marked passed. Record phone model, Android version, app commit
 | Endurance | Operate 2 h on intended powered hub | Record battery, charging, thermal status, traffic continuity and faults |
 
 Inspect the receiver for RTP payload 96, 90 kHz timestamps, sequence progression, final-packet marker, FU-A start/end bits and SPS/PPS before IDR. Capture a signed MAVLink frame at each side and compare the complete bytes. Do not use a live vehicle's arm command as a test. Keep independent ArduPilot failsafes active.
+
+## Web administration acceptance
+
+Automated checks: `./gradlew :core:test :webserver:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug`, `node --test tests/web-ui.mjs`, and syntax checks for both browser scripts. App JVM tests cover a queued resource/state commit after service destruction, commit dispatch to the lifecycle thread, and cancellation of a pending request.
+
+Device HTTP checks on 2026-11-25: login page accessible without credentials; APIs reject unauthenticated requests; configured login accepted; admin/config/status readable after login; logout revokes the session. APK installed on the attached phone. Unauthenticated encoded and repeated-slash admin/API URLs returned 401 after the correction. User confirmed the page worked. Browser automation host unavailable, so no automated visual claim is made.
+
+Manual checks still to perform:
+- On phone and desktop, sign in with wrong/correct credentials and navigate every section. Check no horizontal overflow and keyboard focus visibility.
+- Change a saved setting, reload it, and confirm persistence. During Save, fields should be disabled; after a rejected save they should unlock with edits retained.
+- In a private browser tab, `/admin` must show login. After logout, Back/reload must not restore an active admin session.
+- Stop/start the Android service; the previous browser session must require login again.
+- With video disabled, repeatedly Apply or Pause in the browser while pressing notification Stop on the phone. After Stop, no runtime or wake lock should return; restart visibly and confirm Apply/Pause still work. The automated scheduling tests do not replace this device check.
+- Perform the SITL procedure in `docs/SITL.md`; validate current heartbeat, counters and parameter fetch through the phone, without a direct simulator-to-GCS shortcut.

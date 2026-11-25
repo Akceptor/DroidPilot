@@ -12,7 +12,7 @@ DroidPilot uses normal Android socket routing. It does not bind exclusively to W
 6. Start DroidPilot from its visible Activity. Verify heartbeat, telemetry and a parameter fetch through this path.
 7. Lock the screen. Verify continued traffic. Interrupt ZeroTier, restore it, and verify recovery without restarting the Activity.
 
-Use explicit addresses; VPN broadcast and multicast are not required. Default wildcard binding includes all reachable interfaces. MAVLink UDP is not authenticated by this app. Use a trusted private network, firewall rules and flight-controller signing as appropriate. There is no unauthenticated web command API.
+Use explicit addresses; VPN broadcast and multicast are not required. Default wildcard binding includes all reachable interfaces. MAVLink UDP is not authenticated by this app. Use a trusted private network, firewall rules and flight-controller signing as appropriate. Browser configuration requires a separately configured login; see [web configuration](WEB.md). There is no vehicle command API.
 
 ## RTP/H.264 video
 
